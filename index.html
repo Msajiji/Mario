@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SUPER MARIO ADVENTURE | Misi Menyelamatkan Kerajaan Cendawan</title>
+
+<style>
+
+/* =========================================
+   SUPER MARIO - LANDING PAGE
+========================================= */
+
+:root{
+    --bg:#0b132b;
+    --bg2:#1c2541;
+    --text:#ffffff;
+    --muted:#cbd5e1;
+    --mario-red:#e52521;
+    --mario-red-dark:#b91c1c;
+    --mario-gold:#fbd000;
+    --mario-blue:#049cd8;
+    --mario-green:#43b047;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    margin:0;
+    font-family:'Segoe UI', Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+}
+
+
+/* =========================================
+   HERO SECTION
+========================================= */
+
+.hero{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+
+    /* Gantikan url("assets/mario-banner.jpg") dengan gambar latar Mario anda sendiri */
+    background:
+        linear-gradient(
+            rgba(11, 19, 43, 0.45),
+            rgba(11, 19, 43, 0.85)
+        ),
+        radial-gradient(circle at top, #049cd8 0%, #0b132b 75%),
+        url("assets/mario-banner.jpg");
+
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+}
+
+.hero-content{
+    width:min(90%,850px);
+    padding:40px 20px;
+    position:relative;
+    z-index:2;
+}
+
+.hero-badge{
+    display:inline-block;
+    background:var(--mario-gold);
+    color:#111;
+    font-weight:800;
+    font-size:13px;
+    padding:6px 16px;
+    border-radius:50px;
+    letter-spacing:1.5px;
+    margin-bottom:16px;
+    text-transform:uppercase;
+    box-shadow:0 4px 15px rgba(251, 208, 0, 0.4);
+}
+
+.hero-title{
+    font-size:clamp(38px, 6vw, 68px);
+    font-weight:900;
+    margin:0 0 12px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    text-shadow: 0 6px 0 var(--mario-red-dark), 0 12px 25px rgba(0,0,0,0.6);
+}
+
+.hero-subtitle{
+    font-size:clamp(16px, 2.2vw, 20px);
+    color:#f1f5f9;
+    max-width:600px;
+    margin:0 auto 32px;
+}
+
+
+/* =========================================
+   BUTTONS
+========================================= */
+
+.buttons{
+    display:flex;
+    gap:16px;
+    justify-content:center;
+    flex-wrap:wrap;
+}
+
+.btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+
+    min-width:190px;
+    padding:16px 32px;
+
+    border-radius:12px;
+
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:.8px;
+    text-transform:uppercase;
+
+    cursor:pointer;
+    text-decoration:none;
+
+    transition:.25s ease;
+}
+
+
+/* START GAME (MARIO RED) */
+
+.primary{
+    border:none;
+    background:linear-gradient(135deg, var(--mario-red), #ff4b47);
+    color:white;
+    box-shadow:0 6px 0 var(--mario-red-dark), 0 12px 25px rgba(229, 37, 33, 0.45);
+}
+
+
+/* WATCH INTRO (MARIO GOLD / GLASS) */
+
+.secondary{
+    border:2px solid var(--mario-gold);
+    color:var(--mario-gold);
+    background:rgba(11, 19, 43, 0.75);
+    backdrop-filter:blur(8px);
+    box-shadow:0 6px 0 rgba(180, 145, 0, 0.4);
+}
+
+
+/* BUTTON EFFECT */
+
+.btn:hover{
+    transform:translateY(-3px) scale(1.02);
+}
+
+.btn:active{
+    transform:translateY(2px) scale(.98);
+}
+
+
+/* =========================================
+   GENERAL SECTIONS
+========================================= */
+
+section{
+    padding:85px 20px;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+}
+
+.section-title{
+    text-align:center;
+    font-size:clamp(28px,4vw,42px);
+    font-weight:800;
+    margin:0 0 12px;
+    letter-spacing:1px;
+}
+
+.section-subtitle{
+    text-align:center;
+    color:var(--muted);
+    max-width:650px;
+    margin:0 auto 45px;
+}
+
+
+/* =========================================
+   THE STORY
+========================================= */
+
+.story{
+    background:linear-gradient(180deg, #0b132b, #121e3d);
+}
+
+.story-box{
+    max-width:850px;
+    margin:auto;
+    padding:40px;
+
+    background:linear-gradient(145deg, rgba(28, 37, 65, 0.95), rgba(15, 23, 42, 0.95));
+    border:2px solid rgba(251, 208, 0, 0.25);
+    border-radius:18px;
+
+    color:#e2e8f0;
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+
+.story-box p{
+    margin-top:0;
+}
+
+
+/* =========================================
+   YOUR MISSION
+========================================= */
+
+.mission{
+    background:#0f172a;
+}
+
+.mission-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:15px;
+}
+
+.mission-card{
+    background:linear-gradient(145deg, #1e293b, #0f172a);
+    border:1px solid rgba(255,255,255,.1);
+    padding:28px 15px;
+    border-radius:14px;
+    text-align:center;
+    transition:.25s ease;
+}
+
+.mission-card:hover{
+    transform:translateY(-6px);
+    border-color:var(--mario-gold);
+    box-shadow:0 10px 25px rgba(251, 208, 0, 0.15);
+}
+
+.mission-icon{
+    font-size:40px;
+    margin-bottom:10px;
+}
+
+.mission-card strong{
+    display:block;
+    letter-spacing:1px;
+    color:var(--mario-gold);
+}
+
+
+/* =========================================
+   THE 5 WORLDS
+========================================= */
+
+.worlds{
+    background:linear-gradient(180deg, #121e3d, #0b132b);
+}
+
+.world-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:15px;
+}
+
+.world-card{
+    background:linear-gradient(145deg, #1e293b, #0f172a);
+    border-radius:14px;
+    padding:28px 15px;
+    text-align:center;
+    border:1px solid rgba(255,255,255,.1);
+    transition:.25s ease;
+}
+
+.world-card:hover{
+    transform:translateY(-6px);
+    border-color:var(--mario-red);
+    box-shadow:0 10px 25px rgba(229, 37, 33, 0.2);
+}
+
+.world-icon{
+    font-size:45px;
+}
+
+.world-card h3{
+    margin:15px 0 8px;
+    font-size:15px;
+    color:#fff;
+}
+
+.world-card p{
+    margin:0;
+    color:var(--muted);
+    font-size:13px;
+}
+
+
+/* =========================================
+   FINAL CTA
+========================================= */
+
+.cta{
+    text-align:center;
+    background:radial-gradient(circle at center, #7f1d1d 0%, #121e3d 55%, #0b132b 100%);
+}
+
+.cta p{
+    color:var(--muted);
+    margin-bottom:28px;
+}
+
+
+/* =========================================
+   VIDEO MODAL
+========================================= */
+
+#videoModal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:rgba(0,0,0,.92);
+    padding:20px;
+    align-items:center;
+    justify-content:center;
+}
+
+.video-box{
+    position:relative;
+    width:min(1000px,100%);
+    aspect-ratio:16/9;
+    background:#000;
+    border-radius:14px;
+    overflow:hidden;
+    border:2px solid var(--mario-gold);
+    box-shadow:0 20px 80px rgba(0,0,0,.7);
+}
+
+.video-box iframe{
+    width:100%;
+    height:100%;
+    border:none;
+}
+
+.close-btn{
+    position:absolute;
+    top:12px;
+    right:12px;
+    z-index:10;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    cursor:pointer;
+    background:var(--mario-red);
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+    border:2px solid white;
+}
+
+
+/* =========================================
+   FOOTER
+========================================= */
+
+footer{
+    padding:25px;
+    text-align:center;
+    color:#94a3b8;
+    font-size:13px;
+    background:#060b19;
+}
+
+
+/* =========================================
+   RESPONSIVE (TABLET & MOBILE)
+========================================= */
+
+@media(max-width:900px){
+    .mission-grid,
+    .world-grid{
+        grid-template-columns:repeat(3,1fr);
+    }
+}
+
+@media(max-width:600px){
+    .hero{
+        min-height:80vh;
+    }
+
+    section{
+        padding:65px 18px;
+    }
+
+    .mission-grid,
+    .world-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .story-box{
+        padding:28px 22px;
+    }
+
+    .btn{
+        width:100%;
+        max-width:280px;
+    }
+}
+
+@media(max-width:400px){
+    .mission-grid,
+    .world-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<!-- =========================================
+     HERO BANNER
+========================================= -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <span class="hero-badge">🍄 Pengembaraan Klasik</span>
+
+        <h1 class="hero-title">SUPER MARIO</h1>
+
+        <p class="hero-subtitle">
+            Lompat, kumpul syiling emas, kalahkan Bowser dan selamatkan Puteri Peach di Kerajaan Cendawan!
+        </p>
+
+        <div class="buttons">
+
+            <a
+                href="game.html"
+                class="btn primary"
+            >
+                🍄 START GAME
+            </a>
+
+            <button
+                class="btn secondary"
+                onclick="openVideo()"
+            >
+                ▶ WATCH INTRO
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     THE STORY
+========================================= -->
+
+<section class="story">
+
+    <div class="container">
+
+        <h2 class="section-title">
+            KISAH PENGEMBARAAN
+        </h2>
+
+        <p class="section-subtitle">
+            Kerajaan Cendawan sedang dalam bahaya!
+        </p>
+
+        <div class="story-box">
+
+            <p>
+                <strong>Bowser dan tentera Koopa telah menyerang!</strong>
+            </p>
+
+            <p>
+                Bintang Kuasa (Power Stars) yang melindungi Kerajaan Cendawan telah dicuri dan disembunyikan di lima dunia yang penuh halangan. Puteri Peach turut ditawan di istana terakhir.
+            </p>
+
+            <p>
+                Misi anda sebagai Mario adalah untuk merentasi paip hijau misteri, melompat melepasi jurang berbahaya, dan memecahkan Blok Tanda Soal (Question Blocks) untuk mendapatkan kuasa cendawan serta bunga api.
+            </p>
+
+            <p>
+                Kumpulkan seberapa banyak syiling emas dan tewaskan setiap ketua penjaga dunia sebelum masa tamat!
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     YOUR MISSION
+========================================= -->
+
+<section class="mission">
+
+    <div class="container">
+
+        <h2 class="section-title">
+            MISI ANDA
+        </h2>
+
+        <p class="section-subtitle">
+            Selesaikan setiap cabaran untuk menyelamatkan Kerajaan Cendawan.
+        </p>
+
+        <div class="mission-grid">
+
+            <div class="mission-card">
+                <div class="mission-icon">🏃‍♂️</div>
+                <strong>LARI & LOMPAT</strong>
+            </div>
+
+            <div class="mission-card">
+                <div class="mission-icon">🪙</div>
+                <strong>KUMPUL SYILING</strong>
+            </div>
+
+            <div class="mission-card">
+                <div class="mission-icon">🍄</div>
+                <strong>AMBIL KUASA</strong>
+            </div>
+
+            <div class="mission-card">
+                <div class="mission-icon">🐢</div>
+                <strong>KALAHKAN MUSUH</strong>
+            </div>
+
+            <div class="mission-card">
+                <div class="mission-icon">👑</div>
+                <strong>SELAMATKAN PUTERI</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     THE 5 WORLDS
+========================================= -->
+
+<section class="worlds">
+
+    <div class="container">
+
+        <h2 class="section-title">
+            5 DUNIA MARIO
+        </h2>
+
+        <p class="section-subtitle">
+            Lima dunia mencabar. Satu misi utama.
+        </p>
+
+        <div class="world-grid">
+
+            <div class="world-card">
+                <div class="world-icon">🌿</div>
+                <h3>MUSHROOM PLAINS</h3>
+                <p>
+                    Padang hijau yang dipenuhi Goomba, paip rahsia dan blok syiling.
+                </p>
+            </div>
+
+            <div class="world-card">
+                <div class="world-icon">🏜️</div>
+                <h3>DRY DRY DESERT</h3>
+                <p>
+                    Redah ribut pasir, piramid purba dan halangan kaktus berduri.
+                </p>
+            </div>
+
+            <div class="world-card">
+                <div class="world-icon">🌊</div>
+                <h3>CHEEP CHEEP SEA</h3>
+                <p>
+                    Berenang di dasar lautan biru sambil mengelak ikan dan obor-obor.
+                </p>
+            </div>
+
+            <div class="world-card">
+                <div class="world-icon">☁️</div>
+                <h3>SKY LAND</h3>
+                <p>
+                    Melompat dari awan ke awan tinggi di langit tanpa terjatuh.
+                </p>
+            </div>
+
+            <div class="world-card">
+                <div class="world-icon">🌋</div>
+                <h3>BOWSER'S CASTLE</h3>
+                <p>
+                    Kubu lava berapi. Tewaskan Bowser untuk menamatkan permainan!
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     FINAL CTA
+========================================= -->
+
+<section class="cta">
+
+    <div class="container">
+
+        <h2 class="section-title">
+            SEDIA UNTUK BERMULA, MARIO?
+        </h2>
+
+        <p>
+            Let's-a Go! Mulakan pengembaraan anda sekarang.
+        </p>
+
+        <div class="buttons">
+
+            <a
+                href="game.html"
+                class="btn primary"
+            >
+                🍄 START GAME
+            </a>
+
+            <button
+                class="btn secondary"
+                onclick="openVideo()"
+            >
+                ▶ WATCH INTRO
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     VIDEO MODAL
+========================================= -->
+
+<div id="videoModal">
+
+    <div class="video-box">
+
+        <button
+            class="close-btn"
+            onclick="closeVideo()"
+        >
+            ✕
+        </button>
+
+        <iframe
+            id="introVideo"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen>
+        </iframe>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================
+     FOOTER
+========================================= -->
+
+<footer>
+    SUPER MARIO FAN ADVENTURE © 2026
+</footer>
+
+
+<!-- =========================================
+     JAVASCRIPT
+========================================= -->
+
+<script>
+
+function openVideo(){
+    document.getElementById("videoModal").style.display = "flex";
+    /* Anda boleh tukar ID video YouTube di bawah kepada video intro Mario anda */
+    document.getElementById("introVideo").src =
+        "https://www.youtube.com/embed/xTQHQNjG66Y?autoplay=1&mute=0&playsinline=1&rel=0";
+}
+
+function closeVideo(){
+    document.getElementById("videoModal").style.display = "none";
+    document.getElementById("introVideo").src = "";
+}
+
+document.getElementById("videoModal")
+.addEventListener("click", function(e){
+    if(e.target === this){
+        closeVideo();
+    }
+});
+
+document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){
+        closeVideo();
+    }
+});
+
+</script>
+
+</body>
+</html>
