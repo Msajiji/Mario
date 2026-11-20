@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Rio: Science Quest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1e3a8a;
+            color: white;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            height: 100dvh;
+            width: 100vw;
+        }
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
+        #gameCanvas {
+            image-rendering: pixelated;
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            aspect-ratio: 4 / 3;
+            object-fit: contain;
+        }
+        .modal-bg {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Touch controls visibility (works on iPad, Android tablets, phones, and touch laptops) */
+        #touchControls {
+            display: none;
+        }
+        #touchControls.is-playing.force-show {
+            display: flex !important;
+        }
+        #touchControls.is-playing.force-hide {
+            display: none !important;
+        }
+        @media (pointer: coarse), (hover: none), (max-width: 1024px) {
+            #touchControls.is-playing:not(.force-hide) {
+                display: flex;
+            }
+        }
+        
+        /* Custom Scrollbar for Leaderboard */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #374151; }
+        ::-webkit-scrollbar-thumb { background: #60a5fa; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row h-[100dvh] w-screen m-0 p-0">
+
+    <!-- Game Area -->
+    <div class="relative flex-1 min-h-0 flex flex-col items-center justify-center bg-blue-900 p-2 sm:p-3 md:p-4">
+        
+        <!-- Game HUD -->
+        <div class="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex flex-wrap items-center justify-between gap-2 px-2 sm:px-5 z-10 pixel-font text-[10px] sm:text-xs md:text-sm text-yellow-300 drop-shadow-md hidden" id="gameHUD">
+            <div class="truncate max-w-[110px] sm:max-w-[170px]">NAME: <span id="hudName"></span></div>
+            <div>SCORE: <span id="hudScore">0</span></div>
+            <div>TIME: <span id="hudTime">00:00.0</span></div>
+            <div class="flex items-center gap-2">
+                <span>LVL: <span id="hudLevel">1</span></span>
+                <button id="toggleTouchBtn" type="button" title="Toggle Touch Controls" class="bg-slate-900/70 hover:bg-slate-800 text-white border border-white/60 rounded px-2 py-1 text-[9px] sm:text-[10px] active:scale-95">🎮 PAD</button>
+            </div>
+        </div>
+
+        <div class="w-full h-full flex items-center justify-center min-h-0">
+            <canvas id="gameCanvas" width="800" height="600" class="rounded-lg border-4 border-white"></canvas>
+        </div>
+
+        <!-- Touch Controls (Smartphone, iPad, Android Tablet) -->
+        <div id="touchControls" class="absolute bottom-3 sm:bottom-6 left-0 right-0 justify-between items-end px-4 sm:px-8 z-30 pointer-events-none">
+            <div class="flex gap-4 sm:gap-6 pointer-events-auto">
+                <button id="btnLeft" type="button" aria-label="Move Left" class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-slate-900/65 hover:bg-slate-900/80 rounded-full border-4 border-white/90 shadow-xl flex items-center justify-center active:scale-95 active:bg-blue-500/80 transition">
+                    <svg class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button id="btnRight" type="button" aria-label="Move Right" class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-slate-900/65 hover:bg-slate-900/80 rounded-full border-4 border-white/90 shadow-xl flex items-center justify-center active:scale-95 active:bg-blue-500/80 transition">
+                    <svg class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+            <button id="btnJump" type="button" aria-label="Jump" class="pointer-events-auto w-20 h-16 sm:w-24 sm:h-20 md:w-28 md:h-24 bg-emerald-500/80 hover:bg-emerald-500/95 rounded-full border-4 border-white shadow-xl flex flex-col items-center justify-center active:scale-95 active:bg-emerald-400 transition pixel-font text-[9px] sm:text-[11px] text-white">
+                <svg class="w-7 h-7 sm:w-9 sm:h-9 text-white mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                <span>JUMP</span>
+            </button>
+        </div>
+
+        <!-- Start Screen Modal -->
+        <div id="startScreen" class="absolute inset-0 modal-bg flex items-center justify-center z-50 rounded-lg border-4 border-transparent p-3">
+            <div class="bg-white text-gray-900 p-6 sm:p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-2">
+                <h1 class="pixel-font text-xl sm:text-2xl md:text-3xl text-red-600 mb-2">SUPER RIO</h1>
+                <p class="text-xs sm:text-sm font-bold text-blue-600 mb-4 sm:mb-6 pixel-font">SCIENCE QUEST</p>
+                <p class="mb-4 text-sm sm:text-base text-gray-600 font-medium">Please enter your name to start playing!</p>
+                <input type="text" id="playerNameInput" placeholder="Your Name" class="w-full p-3 border-2 border-gray-300 rounded-lg mb-4 text-base sm:text-lg font-bold text-center focus:outline-none focus:border-blue-500" maxlength="15">
+                <button id="startBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-base sm:text-lg transition-transform transform hover:scale-105 pixel-font text-xs sm:text-sm">START GAME</button>
+            </div>
+        </div>
+
+        <!-- Quiz Modal -->
+        <div id="quizScreen" class="absolute inset-0 modal-bg flex items-center justify-center z-50 hidden rounded-lg border-4 border-transparent p-3">
+            <div class="bg-white text-gray-900 p-5 sm:p-6 md:p-8 rounded-2xl shadow-2xl max-w-2xl w-full mx-2 max-h-[90dvh] overflow-y-auto">
+                <div class="flex justify-between items-center gap-2 mb-4">
+                    <h2 class="text-base sm:text-xl font-bold text-blue-600">SCIENCE QUIZ LEVEL <span id="quizLevelDisplay">1</span></h2>
+                    <span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full font-bold text-xs sm:text-sm shrink-0">Question <span id="questionCounter">1</span>/3</span>
+                </div>
+                <p id="questionText" class="text-base sm:text-lg md:text-xl font-semibold mb-5 min-h-[50px]"></p>
+                <div id="optionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <!-- Options injected via JS -->
+                </div>
+                <div id="quizFeedback" class="mt-4 text-center font-bold text-lg hidden"></div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="gameOverScreen" class="absolute inset-0 modal-bg flex items-center justify-center z-50 hidden rounded-lg border-4 border-transparent p-3">
+            <div class="bg-white text-gray-900 p-6 sm:p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-2">
+                <h1 class="pixel-font text-2xl sm:text-3xl text-red-600 mb-3">GAME OVER!</h1>
+                <p class="text-base sm:text-lg font-bold mb-2">Congratulations, <span id="finalName" class="text-blue-600"></span>!</p>
+                <p class="text-gray-600 text-sm mb-2">Your Total Score:</p>
+                <div class="text-4xl sm:text-5xl pixel-font text-yellow-500 mb-4" id="finalScore">0</div>
+                <p class="text-gray-600 text-xs sm:text-sm mb-6">Completion Time: <span id="finalTime" class="font-bold text-blue-700 pixel-font">00:00.0</span></p>
+                <button id="restartBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-base sm:text-lg transition-transform transform hover:scale-105 pixel-font text-xs sm:text-sm">PLAY AGAIN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Sidebar -->
+    <div class="w-full lg:w-80 bg-gray-900 border-t-4 lg:border-t-0 lg:border-l-4 border-blue-500 flex flex-col h-44 sm:h-52 md:h-56 lg:h-full shrink-0 z-20 shadow-2xl">
+        <div class="p-3 sm:p-4 bg-gray-800 border-b-2 border-gray-700">
+            <h2 class="text-base sm:text-xl font-bold text-white pixel-font text-center text-xs sm:text-sm md:text-base">LEADERBOARD</h2>
+            <p class="text-[11px] sm:text-xs text-gray-400 text-center mt-1">Ranked by Score &amp; Fastest Time</p>
+        </div>
+        <div class="flex-1 overflow-y-auto p-3 sm:p-4">
+            <ul id="leaderboardList" class="space-y-2 sm:space-y-3">
+                <!-- Leaderboard items injected via JS -->
+                <li class="text-gray-500 text-center text-sm mt-4 italic">No records yet. Be the first!</li>
+            </ul>
+        </div>
+    </div>
+
+<script>
+/**
+- RIO MARIO BROS - Educational Game
+- Syllabus: Brunei Science Year 7 (English Medium)
+ */
+
+// --- 1. QUESTIONS DATABASE (Brunei Science Year 7 - English) ---
+const questionBank = {
+    1: {
+        normal: [
+            { q: "What is the basic building block of all living organisms?", options: ["Cell", "Tissue", "Organ", "System"], answer: 0 },
+            { q: "Anything that has mass and occupies space is defined as?", options: ["Energy", "Light", "Matter", "Sound"], answer: 2 },
+            { q: "Which laboratory instrument is used to observe microscopic objects like cells?", options: ["Telescope", "Microscope", "Stethoscope", "Periscope"], answer: 1 },
+            { q: "Which state of matter has a fixed shape and a fixed volume?", options: ["Solid", "Liquid", "Gas", "Plasma"], answer: 0 }
+        ],
+        kbat: [
+            { q: "HOTS: If a plant cell loses all its chloroplasts, what will most likely happen?", options: ["It will grow faster", "It cannot make its own food", "It will absorb more water", "It will become an animal cell"], answer: 1 },
+            { q: "HOTS: Ali puts ice under the sun. Why does it melt?", options: ["The sun absorbs the ice", "Heat makes particles move faster and break from fixed positions", "Cold energy is released", "Ice reacts with oxygen"], answer: 1 }
+        ]
+    },
+    2: {
+        normal: [
+            { q: "The process in which a liquid changes into a gas at any temperature below its boiling point is called?", options: ["Melting", "Freezing", "Evaporation", "Condensation"], answer: 2 },
+            { q: "What is the primary source of energy for most living things on Earth?", options: ["Wind", "Water", "The Sun", "Fossil fuels"], answer: 2 },
+            { q: "What form of energy does a moving car possess?", options: ["Potential energy", "Kinetic energy", "Chemical energy", "Heat energy"], answer: 1 },
+            { q: "Which specialised cell is responsible for carrying oxygen around the human body?", options: ["Nerve cell", "Muscle cell", "White blood cell", "Red blood cell"], answer: 3 }
+        ],
+        kbat: [
+            { q: "HOTS: Why does a bathroom mirror fog up when you take a hot shower?", options: ["Water leaks from the mirror", "Hot water vapour hits the cold mirror and condenses", "The mirror melts slightly", "Soap bubbles pop in the air"], answer: 1 },
+            { q: "HOTS: A roller coaster is paused at the very top of a high hill. At this point, it has maximum...", options: ["Kinetic energy", "Gravitational potential energy", "Thermal energy", "Sound energy"], answer: 1 }
+        ]
+    },
+    3: {
+        normal: [
+            { q: "The downward pull of the Earth on an object is known as?", options: ["Frictional force", "Magnetic force", "Gravitational force", "Normal force"], answer: 2 },
+            { q: "Animals that feed entirely on plants are classified as?", options: ["Carnivores", "Herbivores", "Omnivores", "Decomposers"], answer: 1 },
+            { q: "By which process do green plants make their own food using sunlight?", options: ["Respiration", "Photosynthesis", "Transpiration", "Digestion"], answer: 1 },
+            { q: "Which force opposes motion between two surfaces in contact?", options: ["Gravity", "Friction", "Tension", "Upthrust"], answer: 1 }
+        ],
+        kbat: [
+            { q: "HOTS: In a food chain (Grass -> Grasshopper -> Frog), what happens if all frogs are suddenly removed?", options: ["Grass will grow uncontrollably", "Grasshoppers will decrease", "Grasshopper population will increase rapidly", "Grass will turn into frogs"], answer: 2 },
+            { q: "HOTS: Why is it harder to push a heavy box on a rough carpet than on smooth tiles?", options: ["Gravity is stronger on the carpet", "The box becomes heavier on the carpet", "There is a greater frictional force on the carpet", "The tiles push the box forward"], answer: 2 }
+        ]
+    },
+    4: {
+        normal: [
+            { q: "The mass of a substance per unit volume is called its?", options: ["Weight", "Area", "Density", "Pressure"], answer: 2 },
+            { q: "Which of the following is considered a mixture?", options: ["Pure gold", "Air", "Carbon dioxide", "Oxygen gas"], answer: 1 },
+            { q: "What is the chemical symbol for Water?", options: ["HO", "CO2", "O2", "H2O"], answer: 3 },
+            { q: "A force is simply described as a...", options: ["Push or pull", "Form of energy", "State of matter", "Chemical reaction"], answer: 0 }
+        ],
+        kbat: [
+            { q: "HOTS: When poured into a glass, cooking oil floats on top of water. This shows that...", options: ["Oil is heavier than water", "Oil is less dense than water", "Water has less mass than oil", "Oil and water attract each other"], answer: 1 },
+            { q: "HOTS: How would you most easily separate a mixture of iron filings and sand?", options: ["Boil the mixture", "Add water and stir", "Use a strong magnet", "Filter it with paper"], answer: 2 }
+        ]
+    },
+    5: {
+        normal: [
+            { q: "Which of the following is a renewable energy source?", options: ["Coal", "Natural Gas", "Wind", "Petroleum"], answer: 2 },
+            { q: "An increase in greenhouse gases in the atmosphere contributes directly to...", options: ["Global warming", "Ozone layer healing", "More earthquakes", "Cleaner oceans"], answer: 0 },
+            { q: "What role do decomposers play in an ecosystem?", options: ["Produce sunlight", "Recycle nutrients back into the soil", "Hunt large predators", "Create oxygen"], answer: 1 },
+            { q: "Extensive deforestation in a jungle area mostly leads to...", options: ["More oxygen", "Soil erosion and habitat loss", "Colder climates", "More animal species"], answer: 1 }
+        ],
+        kbat: [
+            { q: "HOTS: A factory constantly dumps toxic chemicals into a river. What is the most likely long-term effect?", options: ["Fish will adapt and become stronger", "Toxins accumulate in the food chain, poisoning top predators", "The river will naturally clean itself in a day", "Plant life will grow much faster"], answer: 1 },
+            { q: "HOTS: Why is using solar energy often considered better for the environment than burning coal?", options: ["Solar panels are cheaper to buy", "Solar energy produces more heat than coal", "Solar energy does not release harmful greenhouse gases", "Coal is infinite but the sun will run out soon"], answer: 2 }
+        ]
+    }
+};
+
+// --- 2. GAME VARIABLES & STATE ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameState = 'START'; // START, PLAYING, QUIZ, GAMEOVER
+let playerName = "";
+let score = 0;
+let elapsedTimeMs = 0;
+let lastFrameTime = null;
+let currentLevel = 1;
+const maxLevel = 5;
+let animationId;
+let leaderboardData = [];
+
+let isGoalReached = false;
+let currentQuizQuestions = [];
+let currentQuestionIndex = 0;
+
+const GRAVITY = 0.5;
+const FRICTION = 0.8;
+const MAX_SPEED = 5;
+
+const keys = {
+    ArrowLeft: false, ArrowRight: false, ArrowUp: false,
+    a: false, d: false, w: false, Space: false
+};
+
+// --- 3. HELPER GRAPHICS FUNCTION ---
+function drawRoundRect(ctx, x, y, w, h, r, fill, stroke, shadowY = 0) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    
+    if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+    }
+    
+    if (shadowY > 0 && fill) {
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        ctx.beginPath();
+        ctx.moveTo(x + r, y + h - shadowY);
+        ctx.lineTo(x + w - r, y + h - shadowY);
+        ctx.quadraticCurveTo(x + w, y + h - shadowY, x + w, y + h - shadowY + (r/2));
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + h - shadowY + (r/2));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+}
+
+// --- 4. GAME ENTITIES ---
+class Player {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 32;
+        this.height = 32;
+        this.vx = 0;
+        this.vy = 0;
+        this.speed = 2.0;
+        this.jumpPower = -12;
+        this.grounded = false;
+        this.trail = [];
+    }
+
+    update() {
+        if ((keys.ArrowLeft || keys.a) && !isGoalReached) {
+            this.vx -= this.speed;
+        }
+        if ((keys.ArrowRight || keys.d) && !isGoalReached) {
+            this.vx += this.speed;
+        }
+
+        if ((keys.ArrowUp || keys.w || keys.Space) && this.grounded && !isGoalReached) {
+            this.vy = this.jumpPower;
+            this.grounded = false;
+        }
+
+        this.vx *= FRICTION;
+        this.vy += GRAVITY;
+
+        if (this.vx > MAX_SPEED) this.vx = MAX_SPEED;
+        if (this.vx < -MAX_SPEED) this.vx = -MAX_SPEED;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        this.trail.push({x: this.x + this.width/2, y: this.y + this.height/2});
+        if (this.trail.length > 15) this.trail.shift();
+
+        if (this.x < 0) { this.x = 0; this.vx = 0; }
+        if (this.x + this.width > canvas.width) { this.x = canvas.width - this.width; this.vx = 0; }
+        if (this.y > canvas.height) {
+            this.die();
+        }
+    }
+    
+    die() {
+        this.x = 50;
+        this.y = 100;
+        this.vy = 0;
+        this.trail = [];
+        score = Math.max(0, score - 50);
+        updateHUD();
+    }
+
+    draw(ctx) {
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        
+        let dir = this.vx >= 0 ? 1 : -1;
+        if (this.vx === 0 && (keys.ArrowLeft || keys.a)) dir = -1;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(dir, 1);
+
+        // Turban (White)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-8, -20, 16, 8);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(-8, -16, 16, 2);
+
+        // Face (Skin tone)
+        ctx.fillStyle = '#f4c49e';
+        ctx.fillRect(-6, -12, 12, 10);
+        
+        // Smile/Mouth
+        ctx.fillStyle = '#991b1b';
+        ctx.fillRect(4, -4, 3, 1);
+
+        // Sci-fi Visor / Glasses
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.6)';
+        ctx.fillRect(-7, -11, 15, 6);
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-7, -11, 15, 6);
+        ctx.fillStyle = '#cffafe';
+        ctx.fillRect(-5, -10, 4, 2);
+
+        // Inner Vest
+        ctx.fillStyle = '#334155'; 
+        ctx.fillRect(-4, -2, 8, 10);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(0, 0, 2, 2);
+        ctx.fillRect(0, 4, 2, 2);
+
+        // Red Jacket
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(-7, -2, 3, 11);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(3, -2, 4, 11);
+
+        // Arms
+        ctx.fillStyle = '#991b1b';
+        ctx.fillRect(-10, -2, 4, 7);
+        ctx.fillStyle = '#f4c49e';
+        ctx.fillRect(-10, 5, 4, 3);
+        
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(5, -2, 4, 7);
+        ctx.fillStyle = '#06b6d4'; 
+        ctx.fillRect(5, 4, 4, 1);
+        ctx.fillStyle = '#f4c49e';
+        ctx.fillRect(5, 5, 4, 3);
+
+        // Pants
+        ctx.fillStyle = '#1e293b'; 
+        ctx.fillRect(-5, 8, 4, 6);
+        ctx.fillRect(1, 8, 4, 6);
+        
+        // Shoes
+        ctx.fillStyle = '#0f172a'; 
+        ctx.fillRect(-7, 14, 6, 3);
+        ctx.fillRect(1, 14, 6, 3);
+
+        ctx.restore();
+    }
+}
+
+class Platform {
+    constructor(x, y, w, h, isFloor = false) {
+        this.x = x;
+        this.y = y;
+        this.width = w;
+        this.height = h;
+        this.isFloor = isFloor;
+    }
+    draw(ctx) {
+        if (this.isFloor) {
+            ctx.fillStyle = '#c27a24';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            
+            ctx.strokeStyle = '#9c5a14';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for(let i=0; i<=this.width; i+=24) { ctx.moveTo(this.x+i, this.y+16); ctx.lineTo(this.x+i, this.y+this.height); }
+            for(let i=16; i<=this.height; i+=24) { ctx.moveTo(this.x, this.y+i); ctx.lineTo(this.x+this.width, this.y+i); }
+            ctx.stroke();
+
+            ctx.fillStyle = '#4ade80';
+            ctx.fillRect(this.x, this.y, this.width, 16);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(this.x, this.y+12, this.width, 4);
+            
+            ctx.fillStyle = '#16a34a';
+            for(let i=0; i<this.width; i+=12) {
+                ctx.fillRect(this.x + i + 2, this.y + 4, 4, 4);
+            }
+        } else {
+            ctx.fillStyle = '#cc4a14';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
+            
+            ctx.beginPath();
+            for(let i=0; i<this.width; i+=20) { ctx.moveTo(this.x+i, this.y); ctx.lineTo(this.x+i, this.y+this.height); }
+            for(let i=0; i<this.height; i+=10) { ctx.moveTo(this.x, this.y+i); ctx.lineTo(this.x+this.width, this.y+i); }
+            ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(this.x, this.y, this.width, 3);
+        }
+    }
+}
+
+class Spike {
+    constructor(x, y, w, h) {
+        this.x = x;
+        this.y = y;
+        this.width = w;
+        this.height = h;
+    }
+    draw(ctx) {
+        ctx.fillStyle = '#000000'; 
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+        ctx.fillStyle = '#ffffff'; 
+        let spikeW = 20;
+        let count = Math.floor(this.width / spikeW);
+        let actualW = this.width / count;
+        
+        for(let i=0; i<count; i++) {
+            let sx = this.x + (i * actualW);
+            ctx.beginPath();
+            ctx.moveTo(sx, this.y + this.height);
+            ctx.lineTo(sx + (actualW/2), this.y + 10);
+            ctx.lineTo(sx + actualW, this.y + this.height);
+            ctx.fill();
+            
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.moveTo(sx + (actualW/2), this.y + 10);
+            ctx.lineTo(sx + actualW, this.y + this.height);
+            ctx.lineTo(sx + (actualW/2), this.y + this.height);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+        }
+    }
+}
+
+class StartSign {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    draw(ctx) {
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(this.x + 20, this.y, 6, 40);
+        
+        ctx.fillStyle = '#d2b48c';
+        ctx.fillRect(this.x, this.y - 25, 46, 25);
+        ctx.strokeStyle = '#5c4033';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(this.x, this.y - 25, 46, 25);
+        
+        ctx.fillStyle = '#000000';
+        ctx.font = '7px "Press Start 2P"';
+        ctx.fillText("START", this.x + 4, this.y - 10);
+    }
+}
+
+class Coin {
+    constructor(x, y, label="COIN") {
+        this.x = x;
+        this.y = y;
+        this.width = 24;
+        this.height = 32;
+        this.collected = false;
+        this.animOffset = 0;
+        this.label = label;
+    }
+    draw(ctx) {
+        if (this.collected) return;
+        
+        let time = Date.now() / 200;
+        let scaleX = Math.abs(Math.cos(time)); 
+        this.animOffset = Math.sin(time) * 4;
+        
+        const cy = this.y + this.height/2 + this.animOffset;
+        const cx = this.x + this.width/2;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(scaleX || 0.1, 1);
+
+        ctx.fillStyle = '#facc15'; 
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ca8a04';
+        ctx.stroke();
+        
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.width/4, this.height/2 - 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.font = '8px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.strokeText(this.label, cx, cy - 22);
+        ctx.fillText(this.label, cx, cy - 22);
+        ctx.textAlign = 'left';
+    }
+}
+
+class Goal {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 40;
+        this.height = 80;
+    }
+    draw(ctx) {
+        ctx.fillStyle = '#b45f06';
+        ctx.fillRect(this.x - 4, this.y + this.height - 10, 16, 10);
+        ctx.strokeStyle = 'black';
+        ctx.strokeRect(this.x - 4, this.y + this.height - 10, 16, 10);
+
+        ctx.fillStyle = '#d1d5db';
+        ctx.fillRect(this.x + 2, this.y - 10, 4, this.height + 10);
+        ctx.strokeStyle = '#000';
+        ctx.strokeRect(this.x + 2, this.y - 10, 4, this.height + 10);
+        
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(this.x + 4, this.y - 12, 8, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(this.x + 6, this.y, 30, 20);
+        ctx.strokeRect(this.x + 6, this.y, 30, 20);
+        
+        ctx.fillStyle = '#22c55e';
+        ctx.font = '12px Arial';
+        ctx.fillText("★", this.x + 14, this.y + 15);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '8px "Press Start 2P"';
+        ctx.strokeText("GOAL", this.x - 4, this.y - 25);
+        ctx.fillText("GOAL", this.x - 4, this.y - 25);
+    }
+}
+
+// Global entities
+let player;
+let platforms = [];
+let spikes = [];
+let coins = [];
+let goal;
+let startSign;
+
+// --- 5. LEVEL DESIGN ---
+function loadLevel(levelNum) {
+    player = new Player(40, 350);
+    platforms = [];
+    spikes = [];
+    coins = [];
+    isGoalReached = false;
+    
+    startSign = new StartSign(20, 460);
+
+    if (levelNum === 1) {
+        platforms.push(new Platform(0, 500, 300, 150, true));
+        spikes.push(new Spike(300, 500, 200, 150));
+        platforms.push(new Platform(500, 500, 300, 150, true));
+        
+        platforms.push(new Platform(150, 420, 100, 20, false));
+        platforms.push(new Platform(350, 350, 100, 20, false));
+        
+        coins.push(new Coin(185, 360, "CELL"));
+        coins.push(new Coin(385, 290, "MATTER"));
+        
+        goal = new Goal(720, 420);
+    } 
+    else if (levelNum === 2) {
+        platforms.push(new Platform(0, 500, 200, 150, true));
+        spikes.push(new Spike(200, 500, 350, 150));
+        platforms.push(new Platform(550, 500, 250, 150, true));
+        
+        platforms.push(new Platform(220, 420, 80, 20, false));
+        platforms.push(new Platform(340, 340, 80, 20, false));
+        platforms.push(new Platform(460, 260, 80, 20, false));
+        
+        coins.push(new Coin(245, 360, "SUN"));
+        coins.push(new Coin(365, 280, "HEAT"));
+        coins.push(new Coin(485, 200, "OXYGEN"));
+        
+        goal = new Goal(720, 420);
+    }
+    else if (levelNum === 3) {
+        platforms.push(new Platform(0, 500, 150, 150, true));
+        spikes.push(new Spike(150, 500, 450, 150));
+        platforms.push(new Platform(600, 500, 200, 150, true));
+        
+        platforms.push(new Platform(180, 420, 80, 20, false));
+        platforms.push(new Platform(300, 320, 80, 20, false));
+        platforms.push(new Platform(180, 220, 80, 20, false));
+        platforms.push(new Platform(400, 180, 80, 20, false));
+        platforms.push(new Platform(500, 380, 80, 20, false));
+        
+        coins.push(new Coin(210, 360, "FORCE"));
+        coins.push(new Coin(330, 260, "PULL"));
+        coins.push(new Coin(430, 120, "FOOD"));
+        
+        goal = new Goal(720, 420);
+    }
+    else if (levelNum === 4) {
+        platforms.push(new Platform(0, 500, 100, 150, true));
+        spikes.push(new Spike(100, 500, 580, 150));
+        platforms.push(new Platform(680, 500, 120, 150, true));
+        
+        platforms.push(new Platform(130, 420, 60, 20, false));
+        platforms.push(new Platform(230, 340, 60, 20, false));
+        platforms.push(new Platform(350, 260, 60, 20, false));
+        platforms.push(new Platform(470, 180, 60, 20, false));
+        platforms.push(new Platform(580, 350, 60, 20, false));
+        
+        coins.push(new Coin(145, 360, "MASS"));
+        coins.push(new Coin(245, 280, "VOL"));
+        coins.push(new Coin(365, 200, "MIX"));
+        coins.push(new Coin(485, 120, "H2O"));
+        
+        goal = new Goal(720, 420);
+    }
+    else if (levelNum === 5) {
+        platforms.push(new Platform(0, 500, 80, 150, true));
+        spikes.push(new Spike(80, 500, 520, 150));
+        platforms.push(new Platform(600, 500, 200, 150, true));
+        
+        platforms.push(new Platform(120, 420, 50, 20, false));
+        platforms.push(new Platform(210, 340, 50, 20, false));
+        platforms.push(new Platform(300, 260, 50, 20, false));
+        platforms.push(new Platform(390, 180, 50, 20, false));
+        platforms.push(new Platform(510, 300, 50, 20, false));
+        
+        coins.push(new Coin(130, 360, "WIND"));
+        coins.push(new Coin(220, 280, "GAS"));
+        coins.push(new Coin(310, 200, "SOLAR"));
+        coins.push(new Coin(400, 120, "EARTH"));
+        
+        goal = new Goal(720, 420);
+    }
+}
+
+// --- 6. GAME ENGINE / LOGIC ---
+
+function AABB(rect1, rect2) {
+    return (
+        rect1.x < rect2.x + rect2.width &&
+        rect1.x + rect1.width > rect2.x &&
+        rect1.y < rect2.y + rect2.height &&
+        rect1.y + rect1.height > rect2.y
+    );
+}
+
+function getCollisionDirection(r1, r2) {
+    const vX = (r1.x + (r1.width / 2)) - (r2.x + (r2.width / 2));
+    const vY = (r1.y + (r1.height / 2)) - (r2.y + (r2.height / 2));
+    const hWidths = (r1.width / 2) + (r2.width / 2);
+    const hHeights = (r1.height / 2) + (r2.height / 2);
+    let colDir = null;
+
+    if (Math.abs(vX) < hWidths && Math.abs(vY) < hHeights) {
+        const oX = hWidths - Math.abs(vX);
+        const oY = hHeights - Math.abs(vY);
+        if (oX >= oY) {
+            if (vY > 0) colDir = 'bottom';
+            else colDir = 'top';
+        } else {
+            if (vX > 0) colDir = 'left';
+            else colDir = 'right';
+        }
+    }
+    return colDir;
+}
+
+function handleCollisions() {
+    player.grounded = false;
+    
+    for (let p of platforms) {
+        const collision = getCollisionDirection(player, p);
+        if (collision) {
+            if (collision === 'top') {
+                player.vy = 0;
+                player.y = p.y - player.height;
+                player.grounded = true;
+            } else if (collision === 'bottom') {
+                player.vy = 0;
+                player.y = p.y + p.height;
+            } else if (collision === 'left') {
+                player.vx = 0;
+                player.x = p.x + p.width;
+            } else if (collision === 'right') {
+                player.vx = 0;
+                player.x = p.x - player.width;
+            }
+        }
+    }
+
+    for (let s of spikes) {
+        const spikeHitbox = {x: s.x + 10, y: s.y + 20, width: s.width - 20, height: s.height - 20};
+        if (AABB(player, spikeHitbox)) {
+            player.die();
+        }
+    }
+
+    for (let c of coins) {
+        if (!c.collected && AABB(player, c)) {
+            c.collected = true;
+            score += 50;
+            updateHUD();
+        }
+    }
+
+    if (!isGoalReached && AABB(player, goal)) {
+        isGoalReached = true;
+        triggerQuiz();
+    }
+}
+
+function gameLoop(timestamp = performance.now()) {
+    if (lastFrameTime === null) lastFrameTime = timestamp;
+    const deltaMs = Math.min(timestamp - lastFrameTime, 100);
+    lastFrameTime = timestamp;
+
+    if (gameState === 'PLAYING') {
+        elapsedTimeMs += deltaMs;
+        updateHUD();
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBackground();
+
+        player.update();
+        handleCollisions();
+
+        if(startSign) startSign.draw(ctx);
+        for (let s of spikes) s.draw(ctx);
+        for (let p of platforms) p.draw(ctx);
+        for (let c of coins) c.draw(ctx);
+        goal.draw(ctx);
+        player.draw(ctx);
+    } else {
+        lastFrameTime = timestamp;
+    }
+    
+    animationId = requestAnimationFrame(gameLoop);
+}
+
+function drawBackground() {
+    let skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    skyGradient.addColorStop(0, '#3b82f6');
+    skyGradient.addColorStop(1, '#93c5fd');
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const drawCloud = (cx, cy, scale) => {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 20*scale, 0, Math.PI * 2);
+        ctx.arc(cx + 25*scale, cy - 10*scale, 25*scale, 0, Math.PI * 2);
+        ctx.arc(cx + 50*scale, cy, 20*scale, 0, Math.PI * 2);
+        ctx.arc(cx + 25*scale, cy + 10*scale, 20*scale, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+        ctx.beginPath();
+        ctx.arc(cx + 25*scale, cy + 12*scale, 18*scale, 0, Math.PI);
+        ctx.fill();
+    }
+    drawCloud(80, 100, 1.2);
+    drawCloud(400, 60, 1.5);
+    drawCloud(650, 120, 1);
+
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(150, canvas.height - 50, 180, Math.PI, 0);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#facc15';
+    for(let i=0; i<300; i+=30) {
+        ctx.beginPath(); ctx.moveTo(0+i, canvas.height-50); ctx.lineTo(150, canvas.height-230); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(300-i, canvas.height-50); ctx.lineTo(150, canvas.height-230); ctx.stroke();
+    }
+
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(600, canvas.height - 50, 140, Math.PI, 0);
+    ctx.fill();
+
+    const drawBush = (cx, cy, radius) => {
+        ctx.fillStyle = '#16a34a';
+        ctx.beginPath(); ctx.arc(cx, cy, radius+4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath(); ctx.arc(cx-radius/3, cy-radius/3, radius/2, 0, Math.PI*2); ctx.fill();
+    }
+    
+    drawBush(50, canvas.height - 80, 40);
+    drawBush(100, canvas.height - 100, 50);
+    drawBush(160, canvas.height - 70, 35);
+
+    drawBush(500, canvas.height - 90, 45);
+    drawBush(560, canvas.height - 110, 55);
+    drawBush(630, canvas.height - 80, 40);
+    drawBush(700, canvas.height - 60, 30);
+}
+
+// --- 6. UI & QUIZ LOGIC ---
+
+const UI = {
+    startScreen: document.getElementById('startScreen'),
+    quizScreen: document.getElementById('quizScreen'),
+    gameOverScreen: document.getElementById('gameOverScreen'),
+    gameHUD: document.getElementById('gameHUD'),
+    touchControls: document.getElementById('touchControls'),
+    playerNameInput: document.getElementById('playerNameInput'),
+    leaderboardList: document.getElementById('leaderboardList')
+};
+
+function isTouchDevice() {
+    return (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        navigator.msMaxTouchPoints > 0 ||
+        window.matchMedia('(pointer: coarse)').matches ||
+        /iPad|iPhone|iPod|Android/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+function formatTime(ms) {
+    const totalTenths = Math.floor(ms / 100);
+    const tenths = totalTenths % 10;
+    const totalSeconds = Math.floor(totalTenths / 10);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60);
+
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+    return `${mm}:${ss}.${tenths}`;
+}
+
+function updateHUD() {
+    document.getElementById('hudName').innerText = playerName;
+    document.getElementById('hudScore').innerText = score;
+    document.getElementById('hudTime').innerText = formatTime(elapsedTimeMs);
+    document.getElementById('hudLevel').innerText = currentLevel;
+}
+
+function startGame() {
+    const nameInput = UI.playerNameInput.value.trim();
+    if (!nameInput) {
+        UI.playerNameInput.style.borderColor = 'red';
+        setTimeout(() => UI.playerNameInput.style.borderColor = '', 1000);
+        return;
+    }
+    
+    playerName = nameInput.toUpperCase();
+    score = 0;
+    elapsedTimeMs = 0;
+    lastFrameTime = performance.now();
+    currentLevel = 1;
+    
+    UI.startScreen.classList.add('hidden');
+    UI.gameOverScreen.classList.add('hidden');
+    UI.gameHUD.classList.remove('hidden');
+
+    UI.touchControls.classList.add('is-playing');
+    if (isTouchDevice()) {
+        UI.touchControls.classList.add('force-show');
+    }
+
+    gameState = 'PLAYING';
+    loadLevel(currentLevel);
+    updateHUD();
+    
+    if(!animationId) gameLoop();
+}
+
+function triggerQuiz() {
+    gameState = 'QUIZ';
+    keys.ArrowLeft = keys.ArrowRight = keys.ArrowUp = false;
+    UI.quizScreen.classList.remove('hidden');
+    
+    let normalQuestions = [...questionBank[currentLevel].normal];
+    let kbatQuestions = [...questionBank[currentLevel].kbat];
+    
+    shuffleArray(normalQuestions);
+    shuffleArray(kbatQuestions);
+    
+    currentQuizQuestions = [normalQuestions[0], normalQuestions[1], kbatQuestions[0]];
+    shuffleArray(currentQuizQuestions);
+
+    currentQuestionIndex = 0;
+    
+    document.getElementById('quizLevelDisplay').innerText = currentLevel;
+    loadQuestion();
+}
+
+function loadQuestion() {
+    document.getElementById('questionCounter').innerText = currentQuestionIndex + 1;
+    const q = currentQuizQuestions[currentQuestionIndex];
+    
+    document.getElementById('questionText').innerText = q.q;
+    
+    const container = document.getElementById('optionsContainer');
+    container.innerHTML = '';
+    
+    q.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full p-4 text-left border-2 border-blue-300 rounded-lg bg-blue-100 hover:bg-blue-200 hover:border-blue-500 font-semibold text-blue-900 transition-colors";
+        btn.innerText = opt;
+        btn.onclick = () => handleAnswer(index, btn);
+        container.appendChild(btn);
+    });
+    
+    document.getElementById('quizFeedback').classList.add('hidden');
+}
+
+function handleAnswer(selectedIndex, btnElement) {
+    const container = document.getElementById('optionsContainer');
+    Array.from(container.children).forEach(b => b.disabled = true);
+    
+    const q = currentQuizQuestions[currentQuestionIndex];
+    const feedback = document.getElementById('quizFeedback');
+    feedback.classList.remove('hidden');
+    
+    if (selectedIndex === q.answer) {
+        btnElement.classList.remove('bg-blue-100', 'border-blue-300', 'text-blue-900');
+        btnElement.classList.add('bg-green-500', 'text-white', 'border-green-600');
+        feedback.innerText = "Correct! +100 Points";
+        feedback.className = "mt-4 text-center font-bold text-xl text-green-500";
+        score += 100;
+    } else {
+        btnElement.classList.remove('bg-blue-100', 'border-blue-300', 'text-blue-900');
+        btnElement.classList.add('bg-red-500', 'text-white', 'border-red-600');
+        container.children[q.answer].classList.remove('bg-blue-100');
+        container.children[q.answer].classList.add('bg-green-300', 'border-green-500');
+        
+        feedback.innerText = "Incorrect!";
+        feedback.className = "mt-4 text-center font-bold text-xl text-red-500";
+    }
+    
+    updateHUD();
+    
+    setTimeout(() => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < 3) {
+            loadQuestion();
+        } else {
+            endQuizSequence();
+        }
+    }, 1500);
+}
+
+function endQuizSequence() {
+    UI.quizScreen.classList.add('hidden');
+    
+    currentLevel++;
+    if (currentLevel > maxLevel) {
+        triggerGameOver();
+    } else {
+        lastFrameTime = performance.now();
+        gameState = 'PLAYING';
+        loadLevel(currentLevel);
+        updateHUD();
+    }
+}
+
+function triggerGameOver() {
+    gameState = 'GAMEOVER';
+    UI.gameHUD.classList.add('hidden');
+    UI.touchControls.classList.remove('is-playing');
+    UI.gameOverScreen.classList.remove('hidden');
+    
+    document.getElementById('finalName').innerText = playerName;
+    document.getElementById('finalScore').innerText = score;
+    document.getElementById('finalTime').innerText = formatTime(elapsedTimeMs);
+    
+    saveToLeaderboard(playerName, score, elapsedTimeMs);
+}
+
+// --- 7. LEADERBOARD ---
+function saveToLeaderboard(name, sc, timeMs) {
+    leaderboardData.push({ name: name, score: sc, timeMs: timeMs });
+    leaderboardData.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.timeMs - b.timeMs;
+    });
+    if (leaderboardData.length > 10) leaderboardData.length = 10;
+    
+    renderLeaderboard();
+}
+
+function renderLeaderboard() {
+    UI.leaderboardList.innerHTML = '';
+    if (leaderboardData.length === 0) {
+        UI.leaderboardList.innerHTML = '<li class="text-gray-500 text-center text-sm mt-4 italic">No records yet. Be the first!</li>';
+        return;
+    }
+    
+    leaderboardData.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.className = "flex justify-between items-center bg-gray-700 p-2.5 sm:p-3 rounded-lg shadow-sm";
+        
+        let rankStyling = "text-gray-400";
+        let trophy = "";
+        if (index === 0) { rankStyling = "text-yellow-400 font-bold"; trophy = "🏆"; }
+        else if (index === 1) { rankStyling = "text-gray-300 font-bold"; trophy = "🥈"; }
+        else if (index === 2) { rankStyling = "text-yellow-600 font-bold"; trophy = "🥉"; }
+
+        li.innerHTML = `
+            <div class="flex items-center gap-2.5 min-w-0">
+                <span class="${rankStyling} w-5 text-center text-xs sm:text-sm shrink-0">${index + 1}</span>
+                <div class="truncate">
+                    <div class="text-white font-semibold text-xs sm:text-sm truncate">${entry.name} ${trophy}</div>
+                    <div class="text-emerald-300 text-[10px] sm:text-xs font-mono">⏱ ${formatTime(entry.timeMs)}</div>
+                </div>
+            </div>
+            <span class="text-blue-400 font-bold pixel-font text-[10px] sm:text-xs shrink-0 ml-2">${entry.score}</span>
+        `;
+        UI.leaderboardList.appendChild(li);
+    });
+}
+
+// --- 8. INPUT LISTENERS ---
+window.addEventListener('keydown', (e) => {
+    if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+    if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+    
+    if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+        e.preventDefault();
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+    if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+});
+
+function setupTouchControls() {
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const btnJump = document.getElementById('btnJump');
+    const toggleTouchBtn = document.getElementById('toggleTouchBtn');
+
+    // Automatically show touch controls on first touch anywhere (including iPadOS desktop mode)
+    window.addEventListener('touchstart', () => {
+        UI.touchControls.classList.remove('force-hide');
+        UI.touchControls.classList.add('force-show');
+    }, { once: true, passive: true });
+
+    // Manual toggle button in HUD
+    toggleTouchBtn.addEventListener('click', () => {
+        const isCurrentlyVisible = window.getComputedStyle(UI.touchControls).display !== 'none';
+        if (isCurrentlyVisible) {
+            UI.touchControls.classList.remove('force-show');
+            UI.touchControls.classList.add('force-hide');
+        } else {
+            UI.touchControls.classList.remove('force-hide');
+            UI.touchControls.classList.add('force-show');
+        }
+    });
+
+    const bindControl = (btn, key) => {
+        const press = (e) => {
+            e.preventDefault();
+            keys[key] = true;
+        };
+        const release = (e) => {
+            e.preventDefault();
+            keys[key] = false;
+        };
+
+        btn.addEventListener('touchstart', press, { passive: false });
+        btn.addEventListener('touchend', release, { passive: false });
+        btn.addEventListener('touchcancel', release, { passive: false });
+        btn.addEventListener('pointerdown', press);
+        btn.addEventListener('pointerup', release);
+        btn.addEventListener('pointercancel', release);
+        btn.addEventListener('pointerleave', release);
+    };
+
+    bindControl(btnLeft, 'ArrowLeft');
+    bindControl(btnRight, 'ArrowRight');
+    bindControl(btnJump, 'ArrowUp');
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', () => {
+    UI.startScreen.classList.remove('hidden');
+    UI.gameOverScreen.classList.add('hidden');
+    UI.playerNameInput.value = '';
+    UI.playerNameInput.focus();
+});
+
+setupTouchControls();
+renderLeaderboard();
+UI.playerNameInput.focus();
+
+ctx.fillStyle = '#87CEEB';
+ctx.fillRect(0,0,canvas.width, canvas.height);
+drawBackground();
+
+</script>
+</body>
+</html>
